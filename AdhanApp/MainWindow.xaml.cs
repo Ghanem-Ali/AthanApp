@@ -17,28 +17,22 @@ namespace AdhanApp
 {
     public partial class MainWindow : Window
     {
-        // --- Win32 API Definitions ---
+        // --- Win32 API (لجعل النافذة خلفية ثابتة) ---
         [DllImport("user32.dll")]
         static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-
         [DllImport("user32.dll")]
         static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-
         [DllImport("user32.dll")]
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
-
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
         delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
-
         [DllImport("user32.dll", SetLastError = true)]
         static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
-
         [DllImport("user32.dll")]
         static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
-        // قيم ثابتة للتحكم في موضع النافذة
         static readonly IntPtr HWND_BOTTOM = new IntPtr(1);
         const uint SWP_NOSIZE = 0x0001;
         const uint SWP_NOMOVE = 0x0002;
@@ -55,14 +49,12 @@ namespace AdhanApp
         {
             InitializeComponent();
 
+            // إعدادات النافذة الأساسية
             this.ShowInTaskbar = false;
-            this.Topmost = false; // التأكد من عدم وجودها في المقدمة
+            this.Topmost = false;
 
-            try
-            {
-                MyNotifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            }
-            catch { }
+            // إعداد الأيقونة والقائمة المنبثقة (الزر الأيمن)
+            SetupTrayIcon();
 
             CalculateTodayPrayers();
             UpdateUIWithPrayerTimes();
@@ -72,8 +64,35 @@ namespace AdhanApp
             {
                 MoveToSecondaryScreen();
                 SetAsBackground();
-                SendToBottom(); // إجبارها على النزول للقاع
+                SendToBottom();
             };
+        }
+
+        private void SetupTrayIcon()
+        {
+            try
+            {
+                // --- سطر الأيقونة المؤقت لضمان الظهور ---
+                // نستخدم أيقونة "الدرع" من النظام لنتأكد أنها ستظهر فوراً
+                MyNotifyIcon.Icon = System.Drawing.SystemIcons.Shield;
+
+                // إنشاء القائمة التي تظهر بالزر الأيمن
+                ContextMenu menu = new ContextMenu();
+
+                MenuItem showItem = new MenuItem { Header = "إظهار / إخفاء النافذة" };
+                showItem.Click += Show_Click;
+
+                MenuItem exitItem = new MenuItem { Header = "خروج نهائي" };
+                exitItem.Click += Exit_Click;
+
+                menu.Items.Add(showItem);
+                menu.Items.Add(new Separator());
+                menu.Items.Add(exitItem);
+
+                // ربط القائمة بالأيقونة
+                MyNotifyIcon.ContextMenu = menu;
+            }
+            catch { }
         }
 
         private void SetAsBackground()
@@ -87,22 +106,16 @@ namespace AdhanApp
             {
                 IntPtr p = FindWindowEx(tophandle, IntPtr.Zero, "SHELLDLL_DefView", "");
                 if (p != IntPtr.Zero)
-                {
                     workerw = FindWindowEx(IntPtr.Zero, tophandle, "WorkerW", "");
-                }
                 return true;
             }), IntPtr.Zero);
 
-            if (workerw != IntPtr.Zero)
-            {
-                SetParent(windowHandle, workerw);
-            }
+            if (workerw != IntPtr.Zero) SetParent(windowHandle, workerw);
         }
 
         private void SendToBottom()
         {
             IntPtr windowHandle = new WindowInteropHelper(this).Handle;
-            // وضع النافذة في أسفل ترتيب الظهور تماماً
             SetWindowPos(windowHandle, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         }
 
@@ -117,26 +130,17 @@ namespace AdhanApp
                     this.Left = target.WorkingArea.Left;
                     this.Top = target.WorkingArea.Top;
                 }
-                else
-                {
-                    this.Left = 0;
-                    this.Top = 0;
-                }
+                else { this.Left = 0; this.Top = 0; }
             }
-            catch
-            {
-                this.Left = 0;
-                this.Top = 0;
-            }
+            catch { this.Left = 0; this.Top = 0; }
         }
 
-        // تم تعديل التايمر لضمان بقاء النافذة في الخلفية حتى لو حاول ويندوز رفعها
         private void Timer_Tick(object sender, EventArgs e)
         {
             DateTime now = DateTime.Now;
             UpdateCountdown(now);
 
-            // تأكيد بقائها في الخلفية كل ثانية (اختياري لزيادة الضمان)
+            // إجبار النافذة على البقاء في القاع كل ثانية
             SendToBottom();
 
             CheckAndNotify(prayerTimes.Fajr.ToLocalTime(), "الفجر", now);
@@ -150,13 +154,6 @@ namespace AdhanApp
                 CalculateTodayPrayers();
                 UpdateUIWithPrayerTimes();
             }
-        }
-
-        // ... (بقية الدوال كما هي في الكود السابق) ...
-
-        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed) this.DragMove();
         }
 
         private void PlayAdhanSound()
@@ -235,9 +232,34 @@ namespace AdhanApp
             txtIsha.Text = prayerTimes.Isha.ToLocalTime().ToString("hh:mm tt");
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) { e.Cancel = true; this.Hide(); }
-        private void MyNotifyIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e) { if (this.IsVisible) this.Hide(); else { this.Show(); this.Activate(); } }
-        private void Show_Click(object sender, RoutedEventArgs e) => MyNotifyIcon_TrayMouseDoubleClick(null, null);
-        private void Exit_Click(object sender, RoutedEventArgs e) => System.Windows.Application.Current.Shutdown();
+        // --- التعامل مع الأيقونة والقائمة ---
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            e.Cancel = true;
+            this.Hide();
+        }
+
+        private void MyNotifyIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
+        {
+            if (this.IsVisible) this.Hide();
+            else { this.Show(); this.Activate(); }
+        }
+
+        private void Show_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.IsVisible) this.Hide();
+            else { this.Show(); this.Activate(); }
+        }
+
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            // تم تحديد المسار الكامل لتجنب خطأ التعارض Ambiguous Reference
+            System.Windows.Application.Current.Shutdown();
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed) this.DragMove();
+        }
     }
 }
