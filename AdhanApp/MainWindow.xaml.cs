@@ -12,26 +12,20 @@ using Microsoft.Toolkit.Uwp.Notifications;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
+using System.Globalization;
 
 namespace AdhanApp
 {
     public partial class MainWindow : Window
     {
         // --- Win32 API (لجعل النافذة خلفية ثابتة) ---
-        [DllImport("user32.dll")]
-        static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-        [DllImport("user32.dll")]
-        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-        [DllImport("user32.dll")]
-        static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+        [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")] static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        [DllImport("user32.dll")] static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
+        [DllImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
         delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
-        [DllImport("user32.dll")]
-        static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+        [DllImport("user32.dll", SetLastError = true)] static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
+        [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
         static readonly IntPtr HWND_BOTTOM = new IntPtr(1);
         const uint SWP_NOSIZE = 0x0001;
@@ -42,6 +36,7 @@ namespace AdhanApp
         private DispatcherTimer timer;
         private PrayerTimes prayerTimes;
         private MediaPlayer mediaPlayer = new MediaPlayer();
+        private bool isMuted = false;
         double lat = 18.3000;
         double lng = 42.7333;
 
@@ -49,13 +44,10 @@ namespace AdhanApp
         {
             InitializeComponent();
 
-            // إعدادات النافذة الأساسية
             this.ShowInTaskbar = false;
             this.Topmost = false;
 
-            // إعداد الأيقونة والقائمة المنبثقة (الزر الأيمن)
             SetupTrayIcon();
-
             CalculateTodayPrayers();
             UpdateUIWithPrayerTimes();
             SetupTimer();
@@ -72,24 +64,28 @@ namespace AdhanApp
         {
             try
             {
-                // --- سطر الأيقونة المؤقت لضمان الظهور ---
-                // نستخدم أيقونة "الدرع" من النظام لنتأكد أنها ستظهر فوراً
                 MyNotifyIcon.Icon = System.Drawing.SystemIcons.Shield;
-
-                // إنشاء القائمة التي تظهر بالزر الأيمن
                 ContextMenu menu = new ContextMenu();
 
                 MenuItem showItem = new MenuItem { Header = "إظهار / إخفاء النافذة" };
                 showItem.Click += Show_Click;
 
+                MenuItem muteItem = new MenuItem { Header = "كتم الصوت", IsCheckable = true };
+                muteItem.Click += (s, e) => { isMuted = muteItem.IsChecked; };
+
+                MenuItem startupItem = new MenuItem { Header = "التشغيل مع الويندوز", IsCheckable = true };
+                startupItem.IsChecked = CheckStartupStatus();
+                startupItem.Click += (s, e) => SetStartup(startupItem.IsChecked);
+
                 MenuItem exitItem = new MenuItem { Header = "خروج نهائي" };
                 exitItem.Click += Exit_Click;
 
                 menu.Items.Add(showItem);
+                menu.Items.Add(muteItem);
+                menu.Items.Add(startupItem);
                 menu.Items.Add(new Separator());
                 menu.Items.Add(exitItem);
 
-                // ربط القائمة بالأيقونة
                 MyNotifyIcon.ContextMenu = menu;
             }
             catch { }
@@ -139,8 +135,6 @@ namespace AdhanApp
         {
             DateTime now = DateTime.Now;
             UpdateCountdown(now);
-
-            // إجبار النافذة على البقاء في القاع كل ثانية
             SendToBottom();
 
             CheckAndNotify(prayerTimes.Fajr.ToLocalTime(), "الفجر", now);
@@ -156,29 +150,6 @@ namespace AdhanApp
             }
         }
 
-        private void PlayAdhanSound()
-        {
-            try
-            {
-                string soundPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "azan_tone.mp3");
-                if (File.Exists(soundPath))
-                {
-                    mediaPlayer.Open(new Uri(soundPath));
-                    mediaPlayer.Volume = 1.0;
-                    mediaPlayer.Play();
-                }
-                else { Console.Beep(1000, 500); }
-            }
-            catch { }
-        }
-
-        private void SetupTimer()
-        {
-            timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            timer.Tick += Timer_Tick;
-            timer.Start();
-        }
-
         private void CheckAndNotify(DateTime prayerTime, string prayerName, DateTime now)
         {
             if (now.Hour == prayerTime.Hour && now.Minute == prayerTime.Minute && now.Second == 0)
@@ -188,6 +159,22 @@ namespace AdhanApp
             }
         }
 
+        private void PlayAdhanSound()
+        {
+            if (isMuted) return;
+            try
+            {
+                string soundPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "azan_tone.mp3");
+                if (File.Exists(soundPath))
+                {
+                    mediaPlayer.Open(new Uri(soundPath));
+                    mediaPlayer.Volume = 1.0;
+                    mediaPlayer.Play();
+                }
+            }
+            catch { }
+        }
+
         private void UpdateCountdown(DateTime now)
         {
             var prayers = new Dictionary<string, DateTime> {
@@ -195,11 +182,43 @@ namespace AdhanApp
                 {"العصر", prayerTimes.Asr.ToLocalTime()}, {"المغرب", prayerTimes.Maghrib.ToLocalTime()},
                 {"العشاء", prayerTimes.Isha.ToLocalTime()}
             };
+
+            // 1. العثور على الصلاة السابقة (آخر صلاة أُذن لها)
+            var previous = prayers.Where(p => p.Value <= now).OrderByDescending(p => p.Value).FirstOrDefault();
+
+            // 2. العثور على الصلاة القادمة
             var next = prayers.Where(p => p.Value > now).OrderBy(p => p.Value).FirstOrDefault();
-            if (next.Key != null)
+
+            // معالجة حالة ما بعد العشاء
+            if (next.Key == null)
             {
-                TimeSpan diff = next.Value - now;
-                lblCountdown.Text = string.Format("{0}:{1:mm}:{1:ss}", (int)diff.TotalHours, diff);
+                var tomorrow = new PrayerTimes(new Coordinates(lat, lng), DateTime.Today.AddDays(1), CalculationMethod.UmmAlQura());
+                next = new KeyValuePair<string, DateTime>("الفجر", tomorrow.Fajr.ToLocalTime());
+            }
+            // معالجة حالة ما قبل الفجر
+            if (previous.Key == null)
+            {
+                var yesterday = new PrayerTimes(new Coordinates(lat, lng), DateTime.Today.AddDays(-1), CalculationMethod.UmmAlQura());
+                previous = new KeyValuePair<string, DateTime>("العشاء", yesterday.Isha.ToLocalTime());
+            }
+
+            TimeSpan timeSinceLast = now - previous.Value;
+
+            // 3. التحقق إذا كان الأذان مضى عليه أقل من 30 دقيقة
+            if (timeSinceLast.TotalMinutes > 0 && timeSinceLast.TotalMinutes <= 30)
+            {
+                // العداد باللون الأحمر مع علامة سالب
+                lblCountdown.Foreground = System.Windows.Media.Brushes.Red;
+                lblCountdown.Text = string.Format("-{0}:{1:mm}:{1:ss}", (int)timeSinceLast.TotalHours, timeSinceLast);
+                UpdateNextPrayerHighlight(previous.Key);
+            }
+            else
+            {
+                // العداد باللون الأصفر/الذهبي الطبيعي للمتبقي
+                lblCountdown.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 215, 0));
+
+                TimeSpan timeUntilNext = next.Value - now;
+                lblCountdown.Text = string.Format("{0}:{1:mm}:{1:ss}", (int)timeUntilNext.TotalHours, timeUntilNext);
                 UpdateNextPrayerHighlight(next.Key);
             }
         }
@@ -207,7 +226,8 @@ namespace AdhanApp
         private void UpdateNextPrayerHighlight(string prayerName)
         {
             ResetAllPrayerHighlights();
-            var highlight = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(100, 255, 215, 0));
+            System.Windows.Media.SolidColorBrush highlight = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(100, 255, 215, 0));
+
             if (prayerName == "الفجر") borderFajr.Background = borderFajrTime.Background = highlight;
             else if (prayerName == "الظهر") borderDhuhr.Background = borderDhuhrTime.Background = highlight;
             else if (prayerName == "العصر") borderAsr.Background = borderAsrTime.Background = highlight;
@@ -232,7 +252,37 @@ namespace AdhanApp
             txtIsha.Text = prayerTimes.Isha.ToLocalTime().ToString("hh:mm tt");
         }
 
-        // --- التعامل مع الأيقونة والقائمة ---
+        private void SetStartup(bool enable)
+        {
+            try
+            {
+                RegistryKey rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+                string path = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                if (path.EndsWith(".dll")) path = path.Replace(".dll", ".exe");
+
+                if (enable) rk.SetValue("AdhanWidgetApp", path);
+                else rk.DeleteValue("AdhanWidgetApp", false);
+            }
+            catch { }
+        }
+
+        private bool CheckStartupStatus()
+        {
+            try
+            {
+                RegistryKey rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+                return rk.GetValue("AdhanWidgetApp") != null;
+            }
+            catch { return false; }
+        }
+
+        private void SetupTimer()
+        {
+            timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            timer.Tick += Timer_Tick;
+            timer.Start();
+        }
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             e.Cancel = true;
@@ -253,7 +303,6 @@ namespace AdhanApp
 
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
-            // تم تحديد المسار الكامل لتجنب خطأ التعارض Ambiguous Reference
             System.Windows.Application.Current.Shutdown();
         }
 

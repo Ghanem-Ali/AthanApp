@@ -4,7 +4,7 @@
         xmlns:h="clr-namespace:H.NotifyIcon;assembly=H.NotifyIcon.Wpf"
         Title="AdhanWidget" Height="280" Width="260" 
         WindowStyle="None" AllowsTransparency="True" Background="Transparent" 
-        ShowInTaskbar="False" Topmost="false" WindowStartupLocation="Manual"
+        ShowInTaskbar="False" Topmost="False" WindowStartupLocation="Manual"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
         Closing="Window_Closing">
     <Grid Background="Transparent">
