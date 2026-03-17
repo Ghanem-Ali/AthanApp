@@ -10,21 +10,54 @@ using Microsoft.Win32;
 using AzanDotNet;
 using Microsoft.Toolkit.Uwp.Notifications;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows.Interop;
 
 namespace AdhanApp
 {
     public partial class MainWindow : Window
     {
+        // --- Win32 API Definitions ---
+        [DllImport("user32.dll")]
+        static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+        delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
+
+        [DllImport("user32.dll")]
+        static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        // قيم ثابتة للتحكم في موضع النافذة
+        static readonly IntPtr HWND_BOTTOM = new IntPtr(1);
+        const uint SWP_NOSIZE = 0x0001;
+        const uint SWP_NOMOVE = 0x0002;
+        const uint SWP_NOACTIVATE = 0x0010;
+
+        // --- Variables ---
         private DispatcherTimer timer;
         private PrayerTimes prayerTimes;
         private MediaPlayer mediaPlayer = new MediaPlayer();
-        // إحداثيات خميس مشيط
         double lat = 18.3000;
         double lng = 42.7333;
 
         public MainWindow()
         {
             InitializeComponent();
+
+            this.ShowInTaskbar = false;
+            this.Topmost = false; // التأكد من عدم وجودها في المقدمة
+
             try
             {
                 MyNotifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -35,8 +68,42 @@ namespace AdhanApp
             UpdateUIWithPrayerTimes();
             SetupTimer();
 
-            // الانتقال للشاشة الثانية فور التحميل
-            this.Loaded += (s, e) => MoveToSecondaryScreen();
+            this.Loaded += (s, e) =>
+            {
+                MoveToSecondaryScreen();
+                SetAsBackground();
+                SendToBottom(); // إجبارها على النزول للقاع
+            };
+        }
+
+        private void SetAsBackground()
+        {
+            IntPtr windowHandle = new WindowInteropHelper(this).Handle;
+            IntPtr progman = FindWindow("Progman", null);
+            SendMessage(progman, 0x052C, new IntPtr(0), IntPtr.Zero);
+
+            IntPtr workerw = IntPtr.Zero;
+            EnumWindows(new EnumWindowsProc((tophandle, topparamhandle) =>
+            {
+                IntPtr p = FindWindowEx(tophandle, IntPtr.Zero, "SHELLDLL_DefView", "");
+                if (p != IntPtr.Zero)
+                {
+                    workerw = FindWindowEx(IntPtr.Zero, tophandle, "WorkerW", "");
+                }
+                return true;
+            }), IntPtr.Zero);
+
+            if (workerw != IntPtr.Zero)
+            {
+                SetParent(windowHandle, workerw);
+            }
+        }
+
+        private void SendToBottom()
+        {
+            IntPtr windowHandle = new WindowInteropHelper(this).Handle;
+            // وضع النافذة في أسفل ترتيب الظهور تماماً
+            SetWindowPos(windowHandle, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         }
 
         private void MoveToSecondaryScreen()
@@ -46,7 +113,6 @@ namespace AdhanApp
                 var screens = System.Windows.Forms.Screen.AllScreens;
                 if (screens.Length > 1)
                 {
-                    // اختيار الشاشة غير الأساسية
                     var target = screens.FirstOrDefault(s => !s.Primary) ?? screens[0];
                     this.Left = target.WorkingArea.Left;
                     this.Top = target.WorkingArea.Top;
@@ -64,6 +130,30 @@ namespace AdhanApp
             }
         }
 
+        // تم تعديل التايمر لضمان بقاء النافذة في الخلفية حتى لو حاول ويندوز رفعها
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            DateTime now = DateTime.Now;
+            UpdateCountdown(now);
+
+            // تأكيد بقائها في الخلفية كل ثانية (اختياري لزيادة الضمان)
+            SendToBottom();
+
+            CheckAndNotify(prayerTimes.Fajr.ToLocalTime(), "الفجر", now);
+            CheckAndNotify(prayerTimes.Dhuhr.ToLocalTime(), "الظهر", now);
+            CheckAndNotify(prayerTimes.Asr.ToLocalTime(), "العصر", now);
+            CheckAndNotify(prayerTimes.Maghrib.ToLocalTime(), "المغرب", now);
+            CheckAndNotify(prayerTimes.Isha.ToLocalTime(), "العشاء", now);
+
+            if (now.Hour == 0 && now.Minute == 0 && now.Second == 0)
+            {
+                CalculateTodayPrayers();
+                UpdateUIWithPrayerTimes();
+            }
+        }
+
+        // ... (بقية الدوال كما هي في الكود السابق) ...
+
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.LeftButton == MouseButtonState.Pressed) this.DragMove();
@@ -80,11 +170,7 @@ namespace AdhanApp
                     mediaPlayer.Volume = 1.0;
                     mediaPlayer.Play();
                 }
-                else
-                {
-                    // تصحيح الخطأ المطبعي هنا
-                    Console.Beep(1000, 500);
-                }
+                else { Console.Beep(1000, 500); }
             }
             catch { }
         }
@@ -101,31 +187,7 @@ namespace AdhanApp
             if (now.Hour == prayerTime.Hour && now.Minute == prayerTime.Minute && now.Second == 0)
             {
                 PlayAdhanSound();
-                try
-                {
-                    new ToastContentBuilder()
-                        .AddText("تنبيه الأذان")
-                        .AddText($"حان الآن موعد أذان {prayerName}")
-                        .Show();
-                }
-                catch { }
-            }
-        }
-
-        private void Timer_Tick(object sender, EventArgs e)
-        {
-            DateTime now = DateTime.Now;
-            UpdateCountdown(now);
-            CheckAndNotify(prayerTimes.Fajr.ToLocalTime(), "الفجر", now);
-            CheckAndNotify(prayerTimes.Dhuhr.ToLocalTime(), "الظهر", now);
-            CheckAndNotify(prayerTimes.Asr.ToLocalTime(), "العصر", now);
-            CheckAndNotify(prayerTimes.Maghrib.ToLocalTime(), "المغرب", now);
-            CheckAndNotify(prayerTimes.Isha.ToLocalTime(), "العشاء", now);
-
-            if (now.Hour == 0 && now.Minute == 0 && now.Second == 0)
-            {
-                CalculateTodayPrayers();
-                UpdateUIWithPrayerTimes();
+                try { new ToastContentBuilder().AddText("تنبيه الأذان").AddText($"حان الآن موعد أذان {prayerName}").Show(); } catch { }
             }
         }
 
@@ -136,13 +198,10 @@ namespace AdhanApp
                 {"العصر", prayerTimes.Asr.ToLocalTime()}, {"المغرب", prayerTimes.Maghrib.ToLocalTime()},
                 {"العشاء", prayerTimes.Isha.ToLocalTime()}
             };
-
             var next = prayers.Where(p => p.Value > now).OrderBy(p => p.Value).FirstOrDefault();
-
             if (next.Key != null)
             {
                 TimeSpan diff = next.Value - now;
-                // التنسيق h:mm:ss سيعرض 2:19:13 بدلاً من 02:19:13
                 lblCountdown.Text = string.Format("{0}:{1:mm}:{1:ss}", (int)diff.TotalHours, diff);
                 UpdateNextPrayerHighlight(next.Key);
             }
@@ -151,9 +210,7 @@ namespace AdhanApp
         private void UpdateNextPrayerHighlight(string prayerName)
         {
             ResetAllPrayerHighlights();
-            // تمييز الصلاة القادمة بلون ذهبي شفاف
             var highlight = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(100, 255, 215, 0));
-
             if (prayerName == "الفجر") borderFajr.Background = borderFajrTime.Background = highlight;
             else if (prayerName == "الظهر") borderDhuhr.Background = borderDhuhrTime.Background = highlight;
             else if (prayerName == "العصر") borderAsr.Background = borderAsrTime.Background = highlight;
