@@ -138,14 +138,21 @@ namespace AdhanApp
 
         private void SetupTimer()
         {
-            // تم تغيير الفاصل الزمني إلى دقيقة واحدة بدلاً من ثانية
-            timer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+            // الحساب للمزامنة مع بداية الدقيقة التالية
+            int secondsRemaining = 60 - DateTime.Now.Second;
+            timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(secondsRemaining) };
             timer.Tick += Timer_Tick;
             timer.Start();
         }
 
         private void Timer_Tick(object? sender, EventArgs e)
         {
+            // إذا كانت هذه "التكة" الأولى، نغير الفاصل الزمني إلى دقيقة كاملة
+            if (timer.Interval.TotalSeconds != 60)
+            {
+                timer.Interval = TimeSpan.FromMinutes(1);
+            }
+
             DateTime now = DateTime.Now;
             UpdateCountdown(now);
             SendToBottom();
@@ -269,8 +276,8 @@ namespace AdhanApp
                 {
                     if (rk != null)
                     {
-                        string path = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                        if (path.EndsWith(".dll")) path = path.Replace(".dll", ".exe");
+                        string? path = Environment.ProcessPath;
+                        if (string.IsNullOrEmpty(path)) return;
 
                         if (enable) rk.SetValue("AdhanWidgetApp", path);
                         else rk.DeleteValue("AdhanWidgetApp", false);
