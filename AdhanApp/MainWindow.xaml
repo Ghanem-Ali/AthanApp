@@ -13,7 +13,7 @@
         <StackPanel VerticalAlignment="Top" HorizontalAlignment="Stretch">
 
             <TextBlock x:Name="lblCountdown" 
-                       Text="0:00:00" 
+                       Text="00:00" 
                        HorizontalAlignment="Center" 
                        TextAlignment="Center"
                        FontSize="42" 

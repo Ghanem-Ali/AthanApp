@@ -18,7 +18,7 @@ namespace AdhanApp
 {
     public partial class MainWindow : Window
     {
-        // --- Win32 API (لجعل النافذة خلفية ثابتة) ---
+        // --- Win32 API ---
         [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
         [DllImport("user32.dll")] static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
         [DllImport("user32.dll")] static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
@@ -50,6 +50,10 @@ namespace AdhanApp
             SetupTrayIcon();
             CalculateTodayPrayers();
             UpdateUIWithPrayerTimes();
+
+            // استدعاء فوري قبل تشغيل التايمر لضمان دقة الوقت عند الفتح
+            UpdateCountdown(DateTime.Now);
+
             SetupTimer();
 
             this.Loaded += (s, e) =>
@@ -75,7 +79,7 @@ namespace AdhanApp
 
                 MenuItem startupItem = new MenuItem { Header = "التشغيل مع الويندوز", IsCheckable = true };
                 startupItem.IsChecked = CheckStartupStatus();
-                startupItem.Click += (s, e) => SetStartup(startupItem.IsChecked);
+                startupItem.Click += (s, e) => setStartup(startupItem.IsChecked);
 
                 MenuItem exitItem = new MenuItem { Header = "خروج نهائي" };
                 exitItem.Click += Exit_Click;
@@ -131,6 +135,14 @@ namespace AdhanApp
             catch { this.Left = 0; this.Top = 0; }
         }
 
+        private void SetupTimer()
+        {
+            // تم تغيير الفاصل الزمني إلى دقيقة واحدة بدلاً من ثانية
+            timer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+            timer.Tick += Timer_Tick;
+            timer.Start();
+        }
+
         private void Timer_Tick(object sender, EventArgs e)
         {
             DateTime now = DateTime.Now;
@@ -143,7 +155,7 @@ namespace AdhanApp
             CheckAndNotify(prayerTimes.Maghrib.ToLocalTime(), "المغرب", now);
             CheckAndNotify(prayerTimes.Isha.ToLocalTime(), "العشاء", now);
 
-            if (now.Hour == 0 && now.Minute == 0 && now.Second == 0)
+            if (now.Hour == 0 && now.Minute == 0)
             {
                 CalculateTodayPrayers();
                 UpdateUIWithPrayerTimes();
@@ -152,7 +164,8 @@ namespace AdhanApp
 
         private void CheckAndNotify(DateTime prayerTime, string prayerName, DateTime now)
         {
-            if (now.Hour == prayerTime.Hour && now.Minute == prayerTime.Minute && now.Second == 0)
+            // التحقق من الساعة والدقيقة فقط
+            if (now.Hour == prayerTime.Hour && now.Minute == prayerTime.Minute)
             {
                 PlayAdhanSound();
                 try { new ToastContentBuilder().AddText("تنبيه الأذان").AddText($"حان الآن موعد أذان {prayerName}").Show(); } catch { }
@@ -183,19 +196,15 @@ namespace AdhanApp
                 {"العشاء", prayerTimes.Isha.ToLocalTime()}
             };
 
-            // 1. العثور على الصلاة السابقة (آخر صلاة أُذن لها)
             var previous = prayers.Where(p => p.Value <= now).OrderByDescending(p => p.Value).FirstOrDefault();
-
-            // 2. العثور على الصلاة القادمة
             var next = prayers.Where(p => p.Value > now).OrderBy(p => p.Value).FirstOrDefault();
 
-            // معالجة حالة ما بعد العشاء
+            // معالجة حالة ما بعد العشاء للبحث عن فجر الغد
             if (next.Key == null)
             {
                 var tomorrow = new PrayerTimes(new Coordinates(lat, lng), DateTime.Today.AddDays(1), CalculationMethod.UmmAlQura());
                 next = new KeyValuePair<string, DateTime>("الفجر", tomorrow.Fajr.ToLocalTime());
             }
-            // معالجة حالة ما قبل الفجر
             if (previous.Key == null)
             {
                 var yesterday = new PrayerTimes(new Coordinates(lat, lng), DateTime.Today.AddDays(-1), CalculationMethod.UmmAlQura());
@@ -204,21 +213,19 @@ namespace AdhanApp
 
             TimeSpan timeSinceLast = now - previous.Value;
 
-            // 3. التحقق إذا كان الأذان مضى عليه أقل من 30 دقيقة
             if (timeSinceLast.TotalMinutes > 0 && timeSinceLast.TotalMinutes <= 30)
             {
-                // العداد باللون الأحمر مع علامة سالب
                 lblCountdown.Foreground = System.Windows.Media.Brushes.Red;
-                lblCountdown.Text = string.Format("-{0}:{1:mm}:{1:ss}", (int)timeSinceLast.TotalHours, timeSinceLast);
+                // إزالة الثواني من التنسيق
+                lblCountdown.Text = string.Format("-{0}:{1:mm}", (int)timeSinceLast.TotalHours, timeSinceLast);
                 UpdateNextPrayerHighlight(previous.Key);
             }
             else
             {
-                // العداد باللون الأصفر/الذهبي الطبيعي للمتبقي
                 lblCountdown.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 215, 0));
-
                 TimeSpan timeUntilNext = next.Value - now;
-                lblCountdown.Text = string.Format("{0}:{1:mm}:{1:ss}", (int)timeUntilNext.TotalHours, timeUntilNext);
+                // إزالة الثواني من التنسيق
+                lblCountdown.Text = string.Format("{0}:{1:mm}", (int)timeUntilNext.TotalHours, timeUntilNext);
                 UpdateNextPrayerHighlight(next.Key);
             }
         }
@@ -252,7 +259,7 @@ namespace AdhanApp
             txtIsha.Text = prayerTimes.Isha.ToLocalTime().ToString("hh:mm tt");
         }
 
-        private void SetStartup(bool enable)
+        private void setStartup(bool enable)
         {
             try
             {
@@ -274,13 +281,6 @@ namespace AdhanApp
                 return rk.GetValue("AdhanWidgetApp") != null;
             }
             catch { return false; }
-        }
-
-        private void SetupTimer()
-        {
-            timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            timer.Tick += Timer_Tick;
-            timer.Start();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
