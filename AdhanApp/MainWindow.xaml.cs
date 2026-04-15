@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -20,7 +20,7 @@ namespace AdhanApp
     {
         // --- Win32 API ---
         [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-        [DllImport("user32.dll")] static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        [DllImport("user32.dll")] static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
         [DllImport("user32.dll")] static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
         [DllImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
         delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
@@ -33,10 +33,11 @@ namespace AdhanApp
         const uint SWP_NOACTIVATE = 0x0010;
 
         // --- Variables ---
-        private DispatcherTimer timer;
-        private PrayerTimes prayerTimes;
+        private DispatcherTimer timer = default!;
+        private PrayerTimes prayerTimes = default!;
         private MediaPlayer mediaPlayer = new MediaPlayer();
         private bool isMuted = false;
+        private bool notificationsEnabled = true;
         double lat = 18.3000;
         double lng = 42.7333;
 
@@ -143,7 +144,7 @@ namespace AdhanApp
             timer.Start();
         }
 
-        private void Timer_Tick(object sender, EventArgs e)
+        private void Timer_Tick(object? sender, EventArgs e)
         {
             DateTime now = DateTime.Now;
             UpdateCountdown(now);
@@ -168,7 +169,8 @@ namespace AdhanApp
             if (now.Hour == prayerTime.Hour && now.Minute == prayerTime.Minute)
             {
                 PlayAdhanSound();
-                try { new ToastContentBuilder().AddText("تنبيه الأذان").AddText($"حان الآن موعد أذان {prayerName}").Show(); } catch { }
+                if (notificationsEnabled)
+                    try { new ToastContentBuilder().AddText("تنبيه الأذان").AddText($"حان الآن موعد أذان {prayerName}").Show(); } catch { }
             }
         }
 
@@ -263,12 +265,17 @@ namespace AdhanApp
         {
             try
             {
-                RegistryKey rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-                string path = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                if (path.EndsWith(".dll")) path = path.Replace(".dll", ".exe");
+                using (RegistryKey? rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    if (rk != null)
+                    {
+                        string path = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                        if (path.EndsWith(".dll")) path = path.Replace(".dll", ".exe");
 
-                if (enable) rk.SetValue("AdhanWidgetApp", path);
-                else rk.DeleteValue("AdhanWidgetApp", false);
+                        if (enable) rk.SetValue("AdhanWidgetApp", path);
+                        else rk.DeleteValue("AdhanWidgetApp", false);
+                    }
+                }
             }
             catch { }
         }
@@ -277,8 +284,10 @@ namespace AdhanApp
         {
             try
             {
-                RegistryKey rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-                return rk.GetValue("AdhanWidgetApp") != null;
+                using (RegistryKey? rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    return rk?.GetValue("AdhanWidgetApp") != null;
+                }
             }
             catch { return false; }
         }
@@ -309,6 +318,22 @@ namespace AdhanApp
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.LeftButton == MouseButtonState.Pressed) this.DragMove();
+        }
+
+        private void Window_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var screenPos = PointToScreen(e.GetPosition(this));
+            var settings = new SettingsWindow(lat, lng, notificationsEnabled, new System.Windows.Point(screenPos.X, screenPos.Y));
+            settings.Owner = this;
+            if (settings.ShowDialog() == true)
+            {
+                lat = settings.Latitude;
+                lng = settings.Longitude;
+                notificationsEnabled = settings.NotificationsEnabled;
+                CalculateTodayPrayers();
+                UpdateUIWithPrayerTimes();
+                UpdateCountdown(DateTime.Now);
+            }
         }
     }
 }
