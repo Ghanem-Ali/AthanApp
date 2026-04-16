@@ -40,41 +40,42 @@
 
 ---
 
-# 🕋 AdhanApp (English)
+# 🕋 Athan App
 
-A simple and lightweight Windows application that automatically reminds you of the five daily prayer times with high accuracy.
-
----
-
-### 🚀 Direct Download
-Get the latest version here:
-[📥 Download AdhanApp (Athan.exe)](https://github.com/Ghanem-Ali/AthanApp/releases/latest/download/Athan.exe)
+A simple and lightweight Windows application that reminds you of prayer (Athan) times.
 
 ---
 
-### ⚠️ Security Steps (SmartScreen)
-Because this is an independent open-source app, Windows might flag it as "unrecognized".
+### 🚀 Download
+You can download the application directly via the following link:
+[📥 Click here to download the app (Athan.exe)](https://drive.google.com/file/d/1BsBkshgosVzCHKxkSLN6I7vYtiO6IXjz/view?usp=drive_link)
+
+---
+
+### ⚠️ Windows Security Note
+When running the program for the first time, you might see a Windows **SmartScreen** alert stating that the application is unrecognized. This happens because the app is independent and does not have a paid Microsoft digital certificate.
+
+**To run the app:**
 1. Click on **"More info"**.
-2. Click **"Run anyway"**.
-*(The app is 100% safe. You can verify the source code yourself).*
+2. Click the **"Run anyway"** button.
+*(The program is completely safe and open-source; you can review the source code here).*
 
 ---
 
-### 🖥️ User Interface
-- **Current Time:** Always visible at the top.
-- **Prayer Schedule:** Clearly lists all five daily prayers.
-- **Smart Highlighting:** Automatically highlights the upcoming prayer.
+### 🖥️ Interface Overview
+The application interface is designed to be simple and eye-friendly:
+- **Remaining/Elapsed Time:** Displays how much time is left until the next prayer or how much time has passed since the last one at the top.
+- **Prayer List:** Displays all prayer timings for the current day.
 
 ---
 
-### ⚙️ Settings
-Click the **Gear icon (⚙️)** to customize:
-- **Latitude & Longitude:** Enter your location coordinates for perfect timing.
-- **Notifications Toggle:** Enable or disable desktop alerts with one click.
+### ⚙️ Settings Guide
+You can access the settings by clicking the **Gear icon (⚙️)** in the corner:
+1. **Coordinates (Latitude & Longitude):** Enter your city's coordinates here to ensure 100% accurate timing calculations.
+2. **Notifications Toggle:** Allows you to enable or disable desktop notifications that appear at prayer times.
 
 ---
 
-### 💎 Features
-- **Accurate:** High-precision prayer time calculations.
-- **Lightweight:** Minimal impact on system resources.
-- **Open Source:** Transparent and safe for everyone.
+### ✨ Features
+- **User Friendly:** No complications—just download, set your location, and it’s ready to go.
+- **Ultra Lightweight:** Does not affect system performance and runs quietly in the background.
