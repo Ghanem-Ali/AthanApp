@@ -62,6 +62,7 @@ namespace AdhanApp
                 MoveToSecondaryScreen();
                 SetAsBackground();
                 SendToBottom();
+                setStartup(true); // تفعيل التشغيل مع الويندوز تلقائياً
             };
         }
 
@@ -327,10 +328,11 @@ namespace AdhanApp
             if (e.LeftButton == MouseButtonState.Pressed) this.DragMove();
         }
 
-        private void Window_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        private void btnSettings_Click(object sender, RoutedEventArgs e)
         {
-            var screenPos = PointToScreen(e.GetPosition(this));
-            var settings = new SettingsWindow(lat, lng, notificationsEnabled, new System.Windows.Point(screenPos.X, screenPos.Y));
+            var screenPos = PointToScreen(new System.Windows.Point(0, 0));
+            // نضع النافذة بجانب زر الإعدادات تقريباً أو في منتصف الشاشة، لكن سنحافظ على نفس المنطق السابق
+            var settings = new SettingsWindow(lat, lng, notificationsEnabled, new System.Windows.Point(screenPos.X + this.Width - 50, screenPos.Y + 50));
             settings.Owner = this;
             if (settings.ShowDialog() == true)
             {
