@@ -6,7 +6,7 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent" 
         ShowInTaskbar="False" Topmost="False" WindowStartupLocation="Manual"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
-        Closing="Window_Closing">
+        Closing="Window_Closing" Icon="app_icon.png">
     <Grid Background="Transparent">
         <h:TaskbarIcon x:Name="MyNotifyIcon" ToolTipText="برنامج الأذان" TrayMouseDoubleClick="MyNotifyIcon_TrayMouseDoubleClick"/>
 

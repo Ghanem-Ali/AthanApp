@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -49,10 +49,11 @@ namespace AdhanApp
             this.Topmost = false;
 
             SetupTrayIcon();
+            LoadSettings(); // طھط­ظ…ظٹظ„ ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ظ…ط­ظپظˆط¸ط©
             CalculateTodayPrayers();
             UpdateUIWithPrayerTimes();
 
-            // استدعاء فوري قبل تشغيل التايمر لضمان دقة الوقت عند الفتح
+            // ط§ط³طھط¯ط¹ط§ط، ظپظˆط±ظٹ ظ‚ط¨ظ„ طھط´ط؛ظٹظ„ ط§ظ„طھط§ظٹظ…ط± ظ„ط¶ظ…ط§ظ† ط¯ظ‚ط© ط§ظ„ظˆظ‚طھ ط¹ظ†ط¯ ط§ظ„ظپطھط­
             UpdateCountdown(DateTime.Now);
 
             SetupTimer();
@@ -62,7 +63,7 @@ namespace AdhanApp
                 MoveToSecondaryScreen();
                 SetAsBackground();
                 SendToBottom();
-                setStartup(true); // تفعيل التشغيل مع الويندوز تلقائياً
+                setStartup(true); // طھظپط¹ظٹظ„ ط§ظ„طھط´ط؛ظٹظ„ ظ…ط¹ ط§ظ„ظˆظٹظ†ط¯ظˆط² طھظ„ظ‚ط§ط¦ظٹط§ظ‹
             };
         }
 
@@ -72,22 +73,21 @@ namespace AdhanApp
             {
                 try
                 {
-                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                    using (Stream stream = assembly.GetManifestResourceStream("AdhanApp.icon.ico"))
-                    {
-                        if (stream != null)
-                            MyNotifyIcon.Icon = new System.Drawing.Icon(stream);
-                        else
-                            MyNotifyIcon.Icon = System.Drawing.SystemIcons.Shield;
-                    }
+                    var uri = new Uri("pack://application:,,,/icon.ico");
+                    var streamInfo = System.Windows.Application.GetResourceStream(uri);
+                    if (streamInfo != null)
+                        MyNotifyIcon.Icon = new System.Drawing.Icon(streamInfo.Stream);
+                    else
+                        MyNotifyIcon.Icon = System.Drawing.SystemIcons.Shield;
                 }
                 catch { MyNotifyIcon.Icon = System.Drawing.SystemIcons.Shield; }
+
                 ContextMenu menu = new ContextMenu();
 
-                MenuItem showItem = new MenuItem { Header = "إظهار / إخفاء النافذة" };
+                MenuItem showItem = new MenuItem { Header = "ط¥ط¸ظ‡ط§ط± / ط¥ط®ظپط§ط، ط§ظ„ظ†ط§ظپط°ط©" };
                 showItem.Click += Show_Click;
 
-                MenuItem exitItem = new MenuItem { Header = "خروج نهائي" };
+                MenuItem exitItem = new MenuItem { Header = "ط®ط±ظˆط¬ ظ†ظ‡ط§ط¦ظٹ" };
                 exitItem.Click += Exit_Click;
 
                 menu.Items.Add(showItem);
@@ -141,7 +141,7 @@ namespace AdhanApp
 
         private void SetupTimer()
         {
-            // الحساب للمزامنة مع بداية الدقيقة التالية
+            // ط§ظ„ط­ط³ط§ط¨ ظ„ظ„ظ…ط²ط§ظ…ظ†ط© ظ…ط¹ ط¨ط¯ط§ظٹط© ط§ظ„ط¯ظ‚ظٹظ‚ط© ط§ظ„طھط§ظ„ظٹط©
             int secondsRemaining = 60 - DateTime.Now.Second;
             timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(secondsRemaining) };
             timer.Tick += Timer_Tick;
@@ -150,7 +150,7 @@ namespace AdhanApp
 
         private void Timer_Tick(object? sender, EventArgs e)
         {
-            // إذا كانت هذه "التكة" الأولى، نغير الفاصل الزمني إلى دقيقة كاملة
+            // ط¥ط°ط§ ظƒط§ظ†طھ ظ‡ط°ظ‡ "ط§ظ„طھظƒط©" ط§ظ„ط£ظˆظ„ظ‰طŒ ظ†ط؛ظٹط± ط§ظ„ظپط§طµظ„ ط§ظ„ط²ظ…ظ†ظٹ ط¥ظ„ظ‰ ط¯ظ‚ظٹظ‚ط© ظƒط§ظ…ظ„ط©
             if (timer.Interval.TotalSeconds != 60)
             {
                 timer.Interval = TimeSpan.FromMinutes(1);
@@ -160,11 +160,11 @@ namespace AdhanApp
             UpdateCountdown(now);
             SendToBottom();
 
-            CheckAndNotify(prayerTimes.Fajr.ToLocalTime(), "الفجر", now);
-            CheckAndNotify(prayerTimes.Dhuhr.ToLocalTime(), "الظهر", now);
-            CheckAndNotify(prayerTimes.Asr.ToLocalTime(), "العصر", now);
-            CheckAndNotify(prayerTimes.Maghrib.ToLocalTime(), "المغرب", now);
-            CheckAndNotify(prayerTimes.Isha.ToLocalTime(), "العشاء", now);
+            CheckAndNotify(prayerTimes.Fajr.ToLocalTime(), "ط§ظ„ظپط¬ط±", now);
+            CheckAndNotify(prayerTimes.Dhuhr.ToLocalTime(), "ط§ظ„ط¸ظ‡ط±", now);
+            CheckAndNotify(prayerTimes.Asr.ToLocalTime(), "ط§ظ„ط¹طµط±", now);
+            CheckAndNotify(prayerTimes.Maghrib.ToLocalTime(), "ط§ظ„ظ…ط؛ط±ط¨", now);
+            CheckAndNotify(prayerTimes.Isha.ToLocalTime(), "ط§ظ„ط¹ط´ط§ط،", now);
 
             if (now.Hour == 0 && now.Minute == 0)
             {
@@ -175,12 +175,12 @@ namespace AdhanApp
 
         private void CheckAndNotify(DateTime prayerTime, string prayerName, DateTime now)
         {
-            // التحقق من الساعة والدقيقة فقط
+            // ط§ظ„طھط­ظ‚ظ‚ ظ…ظ† ط§ظ„ط³ط§ط¹ط© ظˆط§ظ„ط¯ظ‚ظٹظ‚ط© ظپظ‚ط·
             if (now.Hour == prayerTime.Hour && now.Minute == prayerTime.Minute)
             {
                 PlayAdhanSound();
                 if (notificationsEnabled)
-                    try { new ToastContentBuilder().AddText("تنبيه الأذان").AddText($"حان الآن موعد أذان {prayerName}").Show(); } catch { }
+                    try { new ToastContentBuilder().AddText("طھظ†ط¨ظٹظ‡ ط§ظ„ط£ط°ط§ظ†").AddText($"ط­ط§ظ† ط§ظ„ط¢ظ† ظ…ظˆط¹ط¯ ط£ط°ط§ظ† {prayerName}").Show(); } catch { }
             }
         }
 
@@ -190,6 +190,29 @@ namespace AdhanApp
             try
             {
                 string soundPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "azan_tone.mp3");
+                
+                // If not found in local folder, extract from resources to Temp
+                if (!File.Exists(soundPath))
+                {
+                    soundPath = Path.Combine(Path.GetTempPath(), "Athan_azan_tone.mp3");
+                    if (!File.Exists(soundPath))
+                    {
+                        try
+                        {
+                            var uri = new Uri("pack://application:,,,/azan_tone.mp3");
+                            var streamInfo = System.Windows.Application.GetResourceStream(uri);
+                            if (streamInfo != null)
+                            {
+                                using (var fs = new FileStream(soundPath, FileMode.Create))
+                                {
+                                    streamInfo.Stream.CopyTo(fs);
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+
                 if (File.Exists(soundPath))
                 {
                     mediaPlayer.Open(new Uri(soundPath));
@@ -203,24 +226,24 @@ namespace AdhanApp
         private void UpdateCountdown(DateTime now)
         {
             var prayers = new Dictionary<string, DateTime> {
-                {"الفجر", prayerTimes.Fajr.ToLocalTime()}, {"الظهر", prayerTimes.Dhuhr.ToLocalTime()},
-                {"العصر", prayerTimes.Asr.ToLocalTime()}, {"المغرب", prayerTimes.Maghrib.ToLocalTime()},
-                {"العشاء", prayerTimes.Isha.ToLocalTime()}
+                {"ط§ظ„ظپط¬ط±", prayerTimes.Fajr.ToLocalTime()}, {"ط§ظ„ط¸ظ‡ط±", prayerTimes.Dhuhr.ToLocalTime()},
+                {"ط§ظ„ط¹طµط±", prayerTimes.Asr.ToLocalTime()}, {"ط§ظ„ظ…ط؛ط±ط¨", prayerTimes.Maghrib.ToLocalTime()},
+                {"ط§ظ„ط¹ط´ط§ط،", prayerTimes.Isha.ToLocalTime()}
             };
 
             var previous = prayers.Where(p => p.Value <= now).OrderByDescending(p => p.Value).FirstOrDefault();
             var next = prayers.Where(p => p.Value > now).OrderBy(p => p.Value).FirstOrDefault();
 
-            // معالجة حالة ما بعد العشاء للبحث عن فجر الغد
+            // ظ…ط¹ط§ظ„ط¬ط© ط­ط§ظ„ط© ظ…ط§ ط¨ط¹ط¯ ط§ظ„ط¹ط´ط§ط، ظ„ظ„ط¨ط­ط« ط¹ظ† ظپط¬ط± ط§ظ„ط؛ط¯
             if (next.Key == null)
             {
                 var tomorrow = new PrayerTimes(new Coordinates(lat, lng), DateTime.Today.AddDays(1), CalculationMethod.UmmAlQura());
-                next = new KeyValuePair<string, DateTime>("الفجر", tomorrow.Fajr.ToLocalTime());
+                next = new KeyValuePair<string, DateTime>("ط§ظ„ظپط¬ط±", tomorrow.Fajr.ToLocalTime());
             }
             if (previous.Key == null)
             {
                 var yesterday = new PrayerTimes(new Coordinates(lat, lng), DateTime.Today.AddDays(-1), CalculationMethod.UmmAlQura());
-                previous = new KeyValuePair<string, DateTime>("العشاء", yesterday.Isha.ToLocalTime());
+                previous = new KeyValuePair<string, DateTime>("ط§ظ„ط¹ط´ط§ط،", yesterday.Isha.ToLocalTime());
             }
 
             TimeSpan timeSinceLast = now - previous.Value;
@@ -228,7 +251,7 @@ namespace AdhanApp
             if (timeSinceLast.TotalMinutes > 0 && timeSinceLast.TotalMinutes <= 30)
             {
                 lblCountdown.Foreground = System.Windows.Media.Brushes.Red;
-                // إزالة الثواني من التنسيق
+                // ط¥ط²ط§ظ„ط© ط§ظ„ط«ظˆط§ظ†ظٹ ظ…ظ† ط§ظ„طھظ†ط³ظٹظ‚
                 lblCountdown.Text = string.Format("-{0}:{1:mm}", (int)timeSinceLast.TotalHours, timeSinceLast);
                 UpdateNextPrayerHighlight(previous.Key);
             }
@@ -236,7 +259,7 @@ namespace AdhanApp
             {
                 lblCountdown.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 215, 0));
                 TimeSpan timeUntilNext = next.Value - now;
-                // إزالة الثواني من التنسيق
+                // ط¥ط²ط§ظ„ط© ط§ظ„ط«ظˆط§ظ†ظٹ ظ…ظ† ط§ظ„طھظ†ط³ظٹظ‚
                 lblCountdown.Text = string.Format("{0}:{1:mm}", (int)timeUntilNext.TotalHours, timeUntilNext);
                 UpdateNextPrayerHighlight(next.Key);
             }
@@ -247,11 +270,11 @@ namespace AdhanApp
             ResetAllPrayerHighlights();
             System.Windows.Media.SolidColorBrush highlight = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(100, 255, 215, 0));
 
-            if (prayerName == "الفجر") borderFajr.Background = borderFajrTime.Background = highlight;
-            else if (prayerName == "الظهر") borderDhuhr.Background = borderDhuhrTime.Background = highlight;
-            else if (prayerName == "العصر") borderAsr.Background = borderAsrTime.Background = highlight;
-            else if (prayerName == "المغرب") borderMaghrib.Background = borderMaghribTime.Background = highlight;
-            else if (prayerName == "العشاء") borderIsha.Background = borderIshaTime.Background = highlight;
+            if (prayerName == "ط§ظ„ظپط¬ط±") borderFajr.Background = borderFajrTime.Background = highlight;
+            else if (prayerName == "ط§ظ„ط¸ظ‡ط±") borderDhuhr.Background = borderDhuhrTime.Background = highlight;
+            else if (prayerName == "ط§ظ„ط¹طµط±") borderAsr.Background = borderAsrTime.Background = highlight;
+            else if (prayerName == "ط§ظ„ظ…ط؛ط±ط¨") borderMaghrib.Background = borderMaghribTime.Background = highlight;
+            else if (prayerName == "ط§ظ„ط¹ط´ط§ط،") borderIsha.Background = borderIshaTime.Background = highlight;
         }
 
         private void ResetAllPrayerHighlights()
@@ -333,7 +356,7 @@ namespace AdhanApp
         private void btnSettings_Click(object sender, RoutedEventArgs e)
         {
             var screenPos = PointToScreen(new System.Windows.Point(0, 0));
-            // نضع النافذة بجانب زر الإعدادات تقريباً أو في منتصف الشاشة، لكن سنحافظ على نفس المنطق السابق
+            // ظ†ط¶ط¹ ط§ظ„ظ†ط§ظپط°ط© ط¨ط¬ط§ظ†ط¨ ط²ط± ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ طھظ‚ط±ظٹط¨ط§ظ‹ ط£ظˆ ظپظٹ ظ…ظ†طھطµظپ ط§ظ„ط´ط§ط´ط©طŒ ظ„ظƒظ† ط³ظ†ط­ط§ظپط¸ ط¹ظ„ظ‰ ظ†ظپط³ ط§ظ„ظ…ظ†ط·ظ‚ ط§ظ„ط³ط§ط¨ظ‚
             var settings = new SettingsWindow(lat, lng, notificationsEnabled, new System.Windows.Point(screenPos.X + this.Width - 50, screenPos.Y + 50));
             settings.Owner = this;
             if (settings.ShowDialog() == true)
@@ -341,10 +364,43 @@ namespace AdhanApp
                 lat = settings.Latitude;
                 lng = settings.Longitude;
                 notificationsEnabled = settings.NotificationsEnabled;
+                SaveSettings(); // ط­ظپط¸ ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط¬ط¯ظٹط¯ط©
                 CalculateTodayPrayers();
                 UpdateUIWithPrayerTimes();
                 UpdateCountdown(DateTime.Now);
             }
         }
+
+        private void SaveSettings()
+        {
+            try
+            {
+                using (RegistryKey? rk = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AdhanApp"))
+                {
+                    rk?.SetValue("Latitude", lat.ToString(CultureInfo.InvariantCulture));
+                    rk?.SetValue("Longitude", lng.ToString(CultureInfo.InvariantCulture));
+                    rk?.SetValue("NotificationsEnabled", notificationsEnabled.ToString());
+                }
+            }
+            catch { }
+        }
+
+        private void LoadSettings()
+        {
+            try
+            {
+                using (RegistryKey? rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\AdhanApp"))
+                {
+                    if (rk != null)
+                    {
+                        if (double.TryParse(rk.GetValue("Latitude")?.ToString(), CultureInfo.InvariantCulture, out double l)) lat = l;
+                        if (double.TryParse(rk.GetValue("Longitude")?.ToString(), CultureInfo.InvariantCulture, out double lo)) lng = lo;
+                        if (bool.TryParse(rk.GetValue("NotificationsEnabled")?.ToString(), out bool n)) notificationsEnabled = n;
+                    }
+                }
+            }
+            catch { }
+        }
     }
 }
+

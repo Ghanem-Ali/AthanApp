@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
@@ -8,6 +8,7 @@
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationIcon>icon.ico</ApplicationIcon>
+		<AssemblyName>Athan</AssemblyName>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -17,10 +18,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="azan_tone.mp3">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	  <EmbeddedResource Include="icon.ico" />
+	  <Resource Include="azan_tone.mp3" />
+	  <Resource Include="icon.ico" />
+	  <Resource Include="app_icon.png" />
 	</ItemGroup>
 
 </Project>
