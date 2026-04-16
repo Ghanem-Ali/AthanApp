@@ -70,7 +70,15 @@ namespace AdhanApp
         {
             try
             {
-                MyNotifyIcon.Icon = System.Drawing.SystemIcons.Shield;
+                try
+                {
+                    string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
+                    if (File.Exists(iconPath))
+                        MyNotifyIcon.Icon = new System.Drawing.Icon(iconPath);
+                    else
+                        MyNotifyIcon.Icon = System.Drawing.SystemIcons.Shield;
+                }
+                catch { MyNotifyIcon.Icon = System.Drawing.SystemIcons.Shield; }
                 ContextMenu menu = new ContextMenu();
 
                 MenuItem showItem = new MenuItem { Header = "إظهار / إخفاء النافذة" };
