@@ -72,11 +72,14 @@ namespace AdhanApp
             {
                 try
                 {
-                    string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
-                    if (File.Exists(iconPath))
-                        MyNotifyIcon.Icon = new System.Drawing.Icon(iconPath);
-                    else
-                        MyNotifyIcon.Icon = System.Drawing.SystemIcons.Shield;
+                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                    using (Stream stream = assembly.GetManifestResourceStream("AdhanApp.icon.ico"))
+                    {
+                        if (stream != null)
+                            MyNotifyIcon.Icon = new System.Drawing.Icon(stream);
+                        else
+                            MyNotifyIcon.Icon = System.Drawing.SystemIcons.Shield;
+                    }
                 }
                 catch { MyNotifyIcon.Icon = System.Drawing.SystemIcons.Shield; }
                 ContextMenu menu = new ContextMenu();
