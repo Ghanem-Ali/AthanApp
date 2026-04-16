@@ -76,19 +76,10 @@ namespace AdhanApp
                 MenuItem showItem = new MenuItem { Header = "إظهار / إخفاء النافذة" };
                 showItem.Click += Show_Click;
 
-                MenuItem muteItem = new MenuItem { Header = "كتم الصوت", IsCheckable = true };
-                muteItem.Click += (s, e) => { isMuted = muteItem.IsChecked; };
-
-                MenuItem startupItem = new MenuItem { Header = "التشغيل مع الويندوز", IsCheckable = true };
-                startupItem.IsChecked = CheckStartupStatus();
-                startupItem.Click += (s, e) => setStartup(startupItem.IsChecked);
-
                 MenuItem exitItem = new MenuItem { Header = "خروج نهائي" };
                 exitItem.Click += Exit_Click;
 
                 menu.Items.Add(showItem);
-                menu.Items.Add(muteItem);
-                menu.Items.Add(startupItem);
                 menu.Items.Add(new Separator());
                 menu.Items.Add(exitItem);
 

@@ -46,6 +46,13 @@
         </Border.Background>
 
         <StackPanel FlowDirection="RightToLeft">
+            <TextBlock Text="قم بوضع احداثياتك" 
+                       HorizontalAlignment="Center" 
+                       Margin="0,0,0,10" 
+                       Style="{StaticResource LabelStyle}"
+                       FontSize="13" 
+                       Opacity="0.8"
+                       FontWeight="Bold"/>
 
             <!-- Latitude -->
             <StackPanel Orientation="Horizontal" Margin="0,2">
