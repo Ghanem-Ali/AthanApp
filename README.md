@@ -6,7 +6,7 @@
 
 ### 🚀 التحميل (Download)
 يمكنك تحميل البرنامج مباشرة من خلال الرابط التالي:
-[📥 اضغط هنا لتحميل التطبيق (Athan.exe)](https://drive.google.com/file/d/1BsBkshgosVzCHKxkSLN6I7vYtiO6IXjz/view?usp=drive_link)
+[📥 اضغط هنا لتحميل التطبيق (Athan.exe)](https://drive.google.com/drive/folders/18PuFrZFZJgRFUN0cT6KGf5J3268CARZH?usp=sharing)
 
 ---
 
