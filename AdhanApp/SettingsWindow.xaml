@@ -72,6 +72,83 @@
 
             <Separator Background="#444444" Margin="0,10,0,10" Opacity="0.5"/>
 
+            <!-- Screen Selection -->
+            <StackPanel Orientation="Horizontal" Margin="0,2">
+                <TextBlock Text="الشاشة" Style="{StaticResource LabelStyle}"/>
+                <ComboBox x:Name="comboScreen" Margin="30,0,0,0" Width="100" Height="25"
+                          Foreground="White" BorderBrush="#444" BorderThickness="1" 
+                          SelectionChanged="OnValueChanged">
+                    <ComboBox.Template>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid>
+                                <ToggleButton x:Name="ToggleButton" Background="#333" BorderBrush="{TemplateBinding BorderBrush}"
+                                              Foreground="White" Grid.Column="2" Focusable="false"
+                                              IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border x:Name="Border" CornerRadius="4" Background="#333" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1">
+                                                <Path x:Name="Arrow" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0" Data="M0,0 L4,4 L8,0 Z"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+                                <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                                  Margin="5,0,20,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                                    <Border x:Name="DropDownBorder" Background="#333" BorderThickness="1" BorderBrush="#444" CornerRadius="2">
+                                        <ScrollViewer Margin="0" SnapsToDevicePixels="True">
+                                            <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </ControlTemplate>
+                    </ComboBox.Template>
+                    <ComboBox.Resources>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="Background" Value="#333"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Padding" Value="5,2"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#555"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.Resources>
+                </ComboBox>
+            </StackPanel>
+
+            <!-- Position Selection (Visual) -->
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,2">
+                <TextBlock Text="موقع النافذة" Style="{StaticResource LabelStyle}" VerticalAlignment="Top" Margin="0,5,0,0"/>
+                <Border Width="100" Height="70" Background="#252525" CornerRadius="4" 
+                        BorderBrush="#444" BorderThickness="1" Margin="15,0,0,0">
+                    <Grid x:Name="gridPositionSelector" Margin="2" FlowDirection="LeftToRight">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Rectangle x:Name="posTopLeft" Grid.Row="0" Grid.Column="0" Width="14" Height="10" Fill="#555" RadiusX="2" RadiusY="2" Cursor="Hand" MouseLeftButtonDown="Pos_Click" Tag="TopLeft"/>
+                        <Rectangle x:Name="posTopRight" Grid.Row="0" Grid.Column="2" Width="14" Height="10" Fill="#555" RadiusX="2" RadiusY="2" Cursor="Hand" MouseLeftButtonDown="Pos_Click" Tag="TopRight"/>
+                        <Rectangle x:Name="posCenter" Grid.Row="1" Grid.Column="1" Width="14" Height="10" Fill="#555" RadiusX="2" RadiusY="2" Cursor="Hand" MouseLeftButtonDown="Pos_Click" Tag="Center"/>
+                        <Rectangle x:Name="posBottomLeft" Grid.Row="2" Grid.Column="0" Width="14" Height="10" Fill="#555" RadiusX="2" RadiusY="2" Cursor="Hand" MouseLeftButtonDown="Pos_Click" Tag="BottomLeft"/>
+                        <Rectangle x:Name="posBottomRight" Grid.Row="2" Grid.Column="2" Width="14" Height="10" Fill="#555" RadiusX="2" RadiusY="2" Cursor="Hand" MouseLeftButtonDown="Pos_Click" Tag="BottomRight"/>
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <Separator Background="#444444" Margin="0,10,0,10" Opacity="0.5"/>
+
             <!-- Notifications Toggle -->
             <StackPanel Orientation="Horizontal" Margin="0,2">
                 <TextBlock Text="الإشعارات" Style="{StaticResource LabelStyle}"/>

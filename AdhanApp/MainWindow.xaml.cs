@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -46,6 +46,8 @@ namespace AdhanApp
         private bool notificationsEnabled = true;
         double lat = 18.3000;
         double lng = 42.7333;
+        int screenIndex = 0;
+        string windowPosition = "TopLeft";
 
         public MainWindow()
         {
@@ -63,7 +65,7 @@ namespace AdhanApp
 
             this.Loaded += (s, e) =>
             {
-                MoveToSecondaryScreen();
+                ApplyWindowPosition();
                 SetAsBackground();
                 SendToBottom();
                 setStartup(true);
@@ -136,20 +138,61 @@ namespace AdhanApp
             SetWindowPos(windowHandle, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         }
 
-        private void MoveToSecondaryScreen()
+        private void ApplyWindowPosition()
         {
             try
             {
                 var screens = System.Windows.Forms.Screen.AllScreens;
-                if (screens.Length > 1)
+                if (screenIndex < 0 || screenIndex >= screens.Length) screenIndex = 0;
+                var targetScreen = screens[screenIndex];
+                var area = targetScreen.WorkingArea;
+
+                // Getting DPI scale factors for the chosen screen
+                double dpiX = 1.0, dpiY = 1.0;
+                PresentationSource source = PresentationSource.FromVisual(this);
+                if (source != null && source.CompositionTarget != null)
                 {
-                    var target = screens.FirstOrDefault(s => !s.Primary) ?? screens[0];
-                    this.Left = target.WorkingArea.Left;
-                    this.Top = target.WorkingArea.Top;
+                    dpiX = source.CompositionTarget.TransformToDevice.M11;
+                    dpiY = source.CompositionTarget.TransformToDevice.M22;
                 }
-                else { this.Left = 0; this.Top = 0; }
+
+                double targetLeft = 0;
+                double targetTop = 0;
+                
+                // Convert pixels to WPF units
+                double areaLeft = area.Left / dpiX;
+                double areaTop = area.Top / dpiY;
+                double areaWidth = area.Width / dpiX;
+                double areaHeight = area.Height / dpiY;
+
+                switch (windowPosition)
+                {
+                    case "TopRight":
+                        targetLeft = areaLeft + areaWidth - this.Width;
+                        targetTop = areaTop;
+                        break;
+                    case "BottomLeft":
+                        targetLeft = areaLeft;
+                        targetTop = areaTop + areaHeight - this.Height;
+                        break;
+                    case "BottomRight":
+                        targetLeft = areaLeft + areaWidth - this.Width;
+                        targetTop = areaTop + areaHeight - this.Height;
+                        break;
+                    case "Center":
+                        targetLeft = areaLeft + (areaWidth - this.Width) / 2;
+                        targetTop = areaTop + (areaHeight - this.Height) / 2;
+                        break;
+                    default: // TopLeft
+                        targetLeft = areaLeft;
+                        targetTop = areaTop;
+                        break;
+                }
+
+                this.Left = targetLeft;
+                this.Top = targetTop;
             }
-            catch { this.Left = 0; this.Top = 0; }
+            catch { }
         }
 
         private void SetupTimer()
@@ -265,7 +308,8 @@ namespace AdhanApp
             {
                 lblCountdown.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 215, 0));
                 TimeSpan timeUntilNext = next.Value - now;
-                lblCountdown.Text = string.Format("{0}:{1:mm}", (int)timeUntilNext.TotalHours, timeUntilNext);
+                TimeSpan roundedUntil = TimeSpan.FromMinutes(Math.Ceiling(timeUntilNext.TotalMinutes));
+                lblCountdown.Text = string.Format("{0}:{1:mm}", (int)roundedUntil.TotalHours, roundedUntil);
                 UpdateNextPrayerHighlight(next.Key);
             }
         }
@@ -348,17 +392,28 @@ namespace AdhanApp
         private void btnSettings_Click(object sender, RoutedEventArgs e)
         {
             var screenPos = PointToScreen(new System.Windows.Point(0, 0));
-            var settings = new SettingsWindow(lat, lng, notificationsEnabled, new System.Windows.Point(screenPos.X + this.Width - 50, screenPos.Y + 50));
+            double settingsX = screenPos.X + this.Width - 50;
+            double settingsY = screenPos.Y + 50;
+            
+            // If window is on the right side, open settings to the left of the button
+            if (windowPosition.EndsWith("Right")) settingsX = screenPos.X - 210;
+            // If window is at the bottom, open settings above the button
+            if (windowPosition.StartsWith("Bottom")) settingsY = screenPos.Y - 230;
+
+            var settings = new SettingsWindow(lat, lng, notificationsEnabled, screenIndex, windowPosition, new System.Windows.Point(settingsX, settingsY));
             settings.Owner = this;
             if (settings.ShowDialog() == true)
             {
                 lat = settings.Latitude;
                 lng = settings.Longitude;
                 notificationsEnabled = settings.NotificationsEnabled;
+                screenIndex = settings.ScreenIndex;
+                windowPosition = settings.WindowPosition;
                 SaveSettings();
                 CalculateTodayPrayers();
                 UpdateUIWithPrayerTimes();
                 UpdateCountdown(DateTime.Now);
+                ApplyWindowPosition();
             }
         }
 
@@ -371,6 +426,8 @@ namespace AdhanApp
                     rk?.SetValue("Latitude", lat.ToString(CultureInfo.InvariantCulture));
                     rk?.SetValue("Longitude", lng.ToString(CultureInfo.InvariantCulture));
                     rk?.SetValue("NotificationsEnabled", notificationsEnabled.ToString());
+                    rk?.SetValue("ScreenIndex", screenIndex.ToString());
+                    rk?.SetValue("WindowPosition", windowPosition);
                 }
             }
             catch { }
@@ -387,6 +444,13 @@ namespace AdhanApp
                         if (double.TryParse(rk.GetValue("Latitude")?.ToString(), CultureInfo.InvariantCulture, out double l)) lat = l;
                         if (double.TryParse(rk.GetValue("Longitude")?.ToString(), CultureInfo.InvariantCulture, out double lo)) lng = lo;
                         if (bool.TryParse(rk.GetValue("NotificationsEnabled")?.ToString(), out bool n)) notificationsEnabled = n;
+                        if (int.TryParse(rk.GetValue("ScreenIndex")?.ToString(), out int si)) screenIndex = si;
+                        windowPosition = rk.GetValue("WindowPosition")?.ToString() ?? "TopLeft";
+                    }
+                    else
+                    {
+                        // Default to Screen 2 (index 1) if available
+                        if (System.Windows.Forms.Screen.AllScreens.Length > 1) screenIndex = 1;
                     }
                 }
             }
