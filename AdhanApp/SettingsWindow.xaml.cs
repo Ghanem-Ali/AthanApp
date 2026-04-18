@@ -26,12 +26,12 @@ namespace AdhanApp
             toggleNotifications.IsChecked = notificationsEnabled;
 
             // Populate screens
-            var screens = System.Windows.Forms.Screen.AllScreens;
-            for (int i = 0; i < screens.Length; i++)
+            var screens = ScreenHelper.AllScreens();
+            for (int i = 0; i < screens.Count; i++)
             {
                 comboScreen.Items.Add($"شاشة {i + 1}" + (screens[i].Primary ? " (الرئيسية)" : ""));
             }
-            comboScreen.SelectedIndex = (screenIndex >= 0 && screenIndex < screens.Length) ? screenIndex : 0;
+            comboScreen.SelectedIndex = (screenIndex >= 0 && screenIndex < screens.Count) ? screenIndex : 0;
 
             UpdatePositionUI();
 

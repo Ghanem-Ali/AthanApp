@@ -66,13 +66,13 @@ namespace AdhanApp
             this.Loaded += (s, e) =>
             {
                 ApplyWindowPosition();
-                SetAsBackground();
+                // SetAsBackground(); // Commented out to allow Alt+Tab visibility
                 SendToBottom();
                 setStartup(true);
             };
         }
 
-        // إخفاء النافذة من Alt+Tab عند تهيئة موارد النافذة
+        // ضمان ظهور النافذة في Alt+Tab رغم إخفائها من شريط المهام
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
@@ -80,9 +80,10 @@ namespace AdhanApp
             // الحصول على مقبض النافذة
             IntPtr hWnd = new WindowInteropHelper(this).Handle;
 
-            // جلب الخصائص الحالية وإضافة خاصية ToolWindow التي تخفي النافذة من Alt+Tab
+            // جلب الخصائص الحالية وإزالة خاصية ToolWindow (التي يضيفها WPF عادةً عند إخفاء النافذة من شريط المهام)
+            // إزالة هذه الخاصية تجعل النافذة تظهر في Alt+Tab
             int exStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
-            SetWindowLong(hWnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
+            SetWindowLong(hWnd, GWL_EXSTYLE, exStyle & ~WS_EX_TOOLWINDOW);
         }
 
         private void SetupTrayIcon()
@@ -142,8 +143,8 @@ namespace AdhanApp
         {
             try
             {
-                var screens = System.Windows.Forms.Screen.AllScreens;
-                if (screenIndex < 0 || screenIndex >= screens.Length) screenIndex = 0;
+                var screens = ScreenHelper.AllScreens();
+                if (screenIndex < 0 || screenIndex >= screens.Count) screenIndex = 0;
                 var targetScreen = screens[screenIndex];
                 var area = targetScreen.WorkingArea;
 
@@ -450,7 +451,7 @@ namespace AdhanApp
                     else
                     {
                         // Default to Screen 2 (index 1) if available
-                        if (System.Windows.Forms.Screen.AllScreens.Length > 1) screenIndex = 1;
+                        if (ScreenHelper.AllScreens().Count > 1) screenIndex = 1;
                     }
                 }
             }

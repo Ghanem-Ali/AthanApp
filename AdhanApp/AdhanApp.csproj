@@ -6,11 +6,19 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationIcon>icon.ico</ApplicationIcon>
 		<AssemblyName>Athan</AssemblyName>
 		<DebugType>none</DebugType>
 		<DebugSymbols>false</DebugSymbols>
+		
+		<!-- Size Optimizations -->
+		<PublishSingleFile>true</PublishSingleFile>
+		<SelfContained>true</SelfContained>
+		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+		<PublishReadyToRun>false</PublishReadyToRun>
+		<SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -22,7 +30,6 @@
 	<ItemGroup>
 	  <Resource Include="azan_tone.mp3" />
 	  <Resource Include="icon.ico" />
-	  <Resource Include="app_icon.png" />
 	</ItemGroup>
 
 </Project>
