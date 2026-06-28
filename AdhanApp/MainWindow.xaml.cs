@@ -7,7 +7,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Controls;
 using Microsoft.Win32;
-using AzanDotNet;
+using Batoulapps.Adhan;
+using Batoulapps.Adhan.Internal;
 using Microsoft.Toolkit.Uwp.Notifications;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -288,12 +289,14 @@ namespace AdhanApp
 
             if (next.Key == null)
             {
-                var tomorrow = new PrayerTimes(new Coordinates(lat, lng), DateTime.Today.AddDays(1), CalculationMethod.UmmAlQura());
+                var tomorrowDate = DateTime.Today.AddDays(1);
+                var tomorrow = new PrayerTimes(new Coordinates(lat, lng), new DateComponents(tomorrowDate.Year, tomorrowDate.Month, tomorrowDate.Day), CalculationMethod.UMM_AL_QURA.GetParameters());
                 next = new KeyValuePair<string, DateTime>("الفجر", tomorrow.Fajr.ToLocalTime());
             }
             if (previous.Key == null)
             {
-                var yesterday = new PrayerTimes(new Coordinates(lat, lng), DateTime.Today.AddDays(-1), CalculationMethod.UmmAlQura());
+                var yesterdayDate = DateTime.Today.AddDays(-1);
+                var yesterday = new PrayerTimes(new Coordinates(lat, lng), new DateComponents(yesterdayDate.Year, yesterdayDate.Month, yesterdayDate.Day), CalculationMethod.UMM_AL_QURA.GetParameters());
                 previous = new KeyValuePair<string, DateTime>("العشاء", yesterday.Isha.ToLocalTime());
             }
 
@@ -333,7 +336,7 @@ namespace AdhanApp
                 if (child is Border b) b.Background = System.Windows.Media.Brushes.Transparent;
         }
 
-        private void CalculateTodayPrayers() => prayerTimes = new PrayerTimes(new Coordinates(lat, lng), DateTime.Today, CalculationMethod.UmmAlQura());
+        private void CalculateTodayPrayers() => prayerTimes = new PrayerTimes(new Coordinates(lat, lng), new DateComponents(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day), CalculationMethod.UMM_AL_QURA.GetParameters());
 
         private void UpdateUIWithPrayerTimes()
         {
