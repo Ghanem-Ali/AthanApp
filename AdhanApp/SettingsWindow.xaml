@@ -202,6 +202,116 @@
                 </ToggleButton>
             </StackPanel>
 
+            <!-- Volume Slider -->
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,2">
+                <TextBlock Text="مستوى الصوت" Style="{StaticResource LabelStyle}"/>
+                <Slider x:Name="sliderVolume" Minimum="0" Maximum="1" Value="0.5" 
+                        Width="100" Margin="10,0,0,0" VerticalAlignment="Center"
+                        IsSnapToTickEnabled="False" SmallChange="0.01" LargeChange="0.1"
+                        ValueChanged="OnValueChanged">
+                    <Slider.Style>
+                        <Style TargetType="Slider">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Slider">
+                                        <Grid VerticalAlignment="Center">
+                                            <Track x:Name="PART_Track">
+                                                <Track.DecreaseRepeatButton>
+                                                    <RepeatButton Command="Slider.DecreaseLarge">
+                                                        <RepeatButton.Template>
+                                                            <ControlTemplate TargetType="RepeatButton">
+                                                                <Border Height="4" Background="#4CAF50" CornerRadius="2"/>
+                                                            </ControlTemplate>
+                                                        </RepeatButton.Template>
+                                                    </RepeatButton>
+                                                </Track.DecreaseRepeatButton>
+                                                <Track.IncreaseRepeatButton>
+                                                    <RepeatButton Command="Slider.IncreaseLarge">
+                                                        <RepeatButton.Template>
+                                                            <ControlTemplate TargetType="RepeatButton">
+                                                                <Border Height="4" Background="#555555" CornerRadius="2"/>
+                                                            </ControlTemplate>
+                                                        </RepeatButton.Template>
+                                                    </RepeatButton>
+                                                </Track.IncreaseRepeatButton>
+                                                <Track.Thumb>
+                                                    <Thumb Width="14" Height="14">
+                                                        <Thumb.Template>
+                                                            <ControlTemplate TargetType="Thumb">
+                                                                <Ellipse Fill="White" Stroke="#4CAF50" StrokeThickness="1" Cursor="Hand"/>
+                                                            </ControlTemplate>
+                                                        </Thumb.Template>
+                                                    </Thumb>
+                                                </Track.Thumb>
+                                            </Track>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Slider.Style>
+                </Slider>
+                <Button x:Name="btnTestVolume" Content="تجربة" Margin="10,0,0,0" Width="40" Height="22" 
+                        Background="#333" Foreground="White" BorderBrush="#555" Click="BtnTestVolume_Click">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="3"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </StackPanel>
+
+            <Separator Background="#444444" Margin="0,10,0,10" Opacity="0.5"/>
+
+            <!-- Calculation Method -->
+            <StackPanel Orientation="Horizontal" Margin="0,2,0,10">
+                <TextBlock Text="تقويم الأذان" Style="{StaticResource LabelStyle}"/>
+                <ComboBox x:Name="comboCalcMethod" Margin="15,0,0,0" Width="150" Height="25"
+                          Foreground="White" BorderBrush="#444" BorderThickness="1" 
+                          SelectionChanged="OnValueChanged">
+                    <ComboBox.Template>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid>
+                                <ToggleButton x:Name="ToggleButton" Background="#333" BorderBrush="{TemplateBinding BorderBrush}"
+                                              Foreground="White" Grid.Column="2" Focusable="false"
+                                              IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border x:Name="Border" CornerRadius="4" Background="#333" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1">
+                                                <Path x:Name="Arrow" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0" Data="M0,0 L4,4 L8,0 Z"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+                                <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                                  Margin="5,0,20,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                                    <Border x:Name="DropDownBorder" Background="#333" BorderThickness="1" BorderBrush="#444" CornerRadius="2">
+                                        <ScrollViewer Margin="0" SnapsToDevicePixels="True">
+                                            <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </ControlTemplate>
+                    </ComboBox.Template>
+                    <ComboBox.Resources>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="Background" Value="#333"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Padding" Value="5,2"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#555"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.Resources>
+                </ComboBox>
+            </StackPanel>
+
         </StackPanel>
     </Border>
 </Window>

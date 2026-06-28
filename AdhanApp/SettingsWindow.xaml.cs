@@ -1,5 +1,8 @@
 using System.Windows;
 using System.Windows.Input;
+using System;
+using System.Collections.Generic;
+using Batoulapps.Adhan;
 
 namespace AdhanApp
 {
@@ -10,9 +13,26 @@ namespace AdhanApp
         public bool NotificationsEnabled { get; private set; }
         public int ScreenIndex { get; private set; }
         public string WindowPosition { get; private set; }
+        public double Volume { get; private set; }
+        public CalculationMethod CalcMethod { get; private set; }
         private bool _saved = false;
 
-        public SettingsWindow(double currentLat, double currentLng, bool notificationsEnabled, int screenIndex, string windowPosition, System.Windows.Point mousePos)
+        private readonly Dictionary<CalculationMethod, string> _calcMethodsArabic = new Dictionary<CalculationMethod, string>
+        {
+            { CalculationMethod.MUSLIM_WORLD_LEAGUE, "رابطة العالم الإسلامي" },
+            { CalculationMethod.EGYPTIAN, "الهيئة المصرية العامة للمساحة" },
+            { CalculationMethod.KARACHI, "جامعة العلوم الإسلامية بكراتشي" },
+            { CalculationMethod.UMM_AL_QURA, "جامعة أم القرى بمكة المكرمة" },
+            { CalculationMethod.DUBAI, "دبي" },
+            { CalculationMethod.MOON_SIGHTING_COMMITTEE, "لجنة تقصي الأهلة" },
+            { CalculationMethod.NORTH_AMERICA, "الجمعية الإسلامية لأمريكا الشمالية" },
+            { CalculationMethod.KUWAIT, "الكويت" },
+            { CalculationMethod.QATAR, "قطر" },
+            { CalculationMethod.SINGAPORE, "سنغافورة" },
+            { CalculationMethod.OTHER, "أخرى" }
+        };
+
+        public SettingsWindow(double currentLat, double currentLng, bool notificationsEnabled, int screenIndex, string windowPosition, double volume, CalculationMethod calcMethod, System.Windows.Point mousePos)
         {
             InitializeComponent();
             Latitude = currentLat;
@@ -20,10 +40,13 @@ namespace AdhanApp
             NotificationsEnabled = notificationsEnabled;
             ScreenIndex = screenIndex;
             WindowPosition = windowPosition;
+            Volume = volume;
+            CalcMethod = calcMethod;
 
             txtLat.Text = currentLat.ToString();
             txtLng.Text = currentLng.ToString();
             toggleNotifications.IsChecked = notificationsEnabled;
+            sliderVolume.Value = volume;
 
             // Populate screens
             var screens = ScreenHelper.AllScreens();
@@ -32,6 +55,12 @@ namespace AdhanApp
                 comboScreen.Items.Add($"شاشة {i + 1}" + (screens[i].Primary ? " (الرئيسية)" : ""));
             }
             comboScreen.SelectedIndex = (screenIndex >= 0 && screenIndex < screens.Count) ? screenIndex : 0;
+
+            foreach (var method in _calcMethodsArabic)
+            {
+                comboCalcMethod.Items.Add(method.Value);
+            }
+            comboCalcMethod.SelectedItem = _calcMethodsArabic.ContainsKey(calcMethod) ? _calcMethodsArabic[calcMethod] : _calcMethodsArabic[CalculationMethod.UMM_AL_QURA];
 
             UpdatePositionUI();
 
@@ -73,6 +102,18 @@ namespace AdhanApp
                 Longitude = lng;
                 NotificationsEnabled = toggleNotifications.IsChecked == true;
                 ScreenIndex = comboScreen.SelectedIndex;
+                Volume = sliderVolume.Value;
+                
+                var selectedArabicName = comboCalcMethod.SelectedItem?.ToString();
+                foreach (var pair in _calcMethodsArabic)
+                {
+                    if (pair.Value == selectedArabicName)
+                    {
+                        CalcMethod = pair.Key;
+                        break;
+                    }
+                }
+                
                 _saved = true;
             }
         }
@@ -85,6 +126,14 @@ namespace AdhanApp
         }
 
         private void OnToggleChanged(object sender, RoutedEventArgs e) => TrySave();
+
+        private void BtnTestVolume_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.Owner is MainWindow main)
+            {
+                main.TestSound(sliderVolume.Value);
+            }
+        }
 
         private void Window_Deactivated(object? sender, EventArgs e)
         {

@@ -14,6 +14,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Globalization;
+using NAudio.Wave;
 
 namespace AdhanApp
 {
@@ -42,13 +43,16 @@ namespace AdhanApp
         // --- Variables ---
         private DispatcherTimer timer = default!;
         private PrayerTimes prayerTimes = default!;
-        private MediaPlayer mediaPlayer = new MediaPlayer();
+        private WaveOutEvent waveOut = default!;
+        private AudioFileReader audioFileReader = default!;
         private bool isMuted = false;
         private bool notificationsEnabled = true;
         double lat = 18.3000;
         double lng = 42.7333;
         int screenIndex = 0;
         string windowPosition = "TopLeft";
+        double volume = 0.5;
+        CalculationMethod calcMethod = CalculationMethod.UMM_AL_QURA;
 
         public MainWindow()
         {
@@ -239,6 +243,36 @@ namespace AdhanApp
             }
         }
 
+        private void PlayAudioWithNAudio(string soundPath, double volumeLevel)
+        {
+            try
+            {
+                if (waveOut != null)
+                {
+                    waveOut.Stop();
+                    waveOut.Dispose();
+                    waveOut = null;
+                }
+                if (audioFileReader != null)
+                {
+                    audioFileReader.Dispose();
+                    audioFileReader = null;
+                }
+
+                audioFileReader = new AudioFileReader(soundPath);
+                
+                // Map slider 0.0-0.5 to normal volume 0.0-1.0
+                // Map slider 0.5-1.0 to amplified volume 1.0-5.0 (Very Loud)
+                float mappedVolume = (float)(volumeLevel <= 0.5 ? volumeLevel * 2.0 : 1.0 + (volumeLevel - 0.5) * 8.0);
+                audioFileReader.Volume = mappedVolume;
+
+                waveOut = new WaveOutEvent();
+                waveOut.Init(audioFileReader);
+                waveOut.Play();
+            }
+            catch { }
+        }
+
         private void PlayAdhanSound()
         {
             if (isMuted) return;
@@ -268,9 +302,37 @@ namespace AdhanApp
 
                 if (File.Exists(soundPath))
                 {
-                    mediaPlayer.Open(new Uri(soundPath));
-                    mediaPlayer.Volume = 1.0;
-                    mediaPlayer.Play();
+                    PlayAudioWithNAudio(soundPath, volume);
+                }
+            }
+            catch { }
+        }
+
+        public void TestSound(double volumeLevel)
+        {
+            try
+            {
+                string soundPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "azan_tone.mp3");
+                if (!File.Exists(soundPath))
+                {
+                    soundPath = Path.Combine(Path.GetTempPath(), "Athan_azan_tone.mp3");
+                    if (!File.Exists(soundPath))
+                    {
+                        var uri = new Uri("pack://application:,,,/azan_tone.mp3");
+                        var streamInfo = System.Windows.Application.GetResourceStream(uri);
+                        if (streamInfo != null)
+                        {
+                            using (var fs = new FileStream(soundPath, FileMode.Create))
+                            {
+                                streamInfo.Stream.CopyTo(fs);
+                            }
+                        }
+                    }
+                }
+
+                if (File.Exists(soundPath))
+                {
+                    PlayAudioWithNAudio(soundPath, volumeLevel);
                 }
             }
             catch { }
@@ -290,13 +352,13 @@ namespace AdhanApp
             if (next.Key == null)
             {
                 var tomorrowDate = DateTime.Today.AddDays(1);
-                var tomorrow = new PrayerTimes(new Coordinates(lat, lng), new DateComponents(tomorrowDate.Year, tomorrowDate.Month, tomorrowDate.Day), CalculationMethod.UMM_AL_QURA.GetParameters());
+                var tomorrow = new PrayerTimes(new Coordinates(lat, lng), new DateComponents(tomorrowDate.Year, tomorrowDate.Month, tomorrowDate.Day), calcMethod.GetParameters());
                 next = new KeyValuePair<string, DateTime>("الفجر", tomorrow.Fajr.ToLocalTime());
             }
             if (previous.Key == null)
             {
                 var yesterdayDate = DateTime.Today.AddDays(-1);
-                var yesterday = new PrayerTimes(new Coordinates(lat, lng), new DateComponents(yesterdayDate.Year, yesterdayDate.Month, yesterdayDate.Day), CalculationMethod.UMM_AL_QURA.GetParameters());
+                var yesterday = new PrayerTimes(new Coordinates(lat, lng), new DateComponents(yesterdayDate.Year, yesterdayDate.Month, yesterdayDate.Day), calcMethod.GetParameters());
                 previous = new KeyValuePair<string, DateTime>("العشاء", yesterday.Isha.ToLocalTime());
             }
 
@@ -336,7 +398,7 @@ namespace AdhanApp
                 if (child is Border b) b.Background = System.Windows.Media.Brushes.Transparent;
         }
 
-        private void CalculateTodayPrayers() => prayerTimes = new PrayerTimes(new Coordinates(lat, lng), new DateComponents(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day), CalculationMethod.UMM_AL_QURA.GetParameters());
+        private void CalculateTodayPrayers() => prayerTimes = new PrayerTimes(new Coordinates(lat, lng), new DateComponents(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day), calcMethod.GetParameters());
 
         private void UpdateUIWithPrayerTimes()
         {
@@ -404,7 +466,7 @@ namespace AdhanApp
             // If window is at the bottom, open settings above the button
             if (windowPosition.StartsWith("Bottom")) settingsY = screenPos.Y - 230;
 
-            var settings = new SettingsWindow(lat, lng, notificationsEnabled, screenIndex, windowPosition, new System.Windows.Point(settingsX, settingsY));
+            var settings = new SettingsWindow(lat, lng, notificationsEnabled, screenIndex, windowPosition, volume, calcMethod, new System.Windows.Point(settingsX, settingsY));
             settings.Owner = this;
             if (settings.ShowDialog() == true)
             {
@@ -413,6 +475,8 @@ namespace AdhanApp
                 notificationsEnabled = settings.NotificationsEnabled;
                 screenIndex = settings.ScreenIndex;
                 windowPosition = settings.WindowPosition;
+                volume = settings.Volume;
+                calcMethod = settings.CalcMethod;
                 SaveSettings();
                 CalculateTodayPrayers();
                 UpdateUIWithPrayerTimes();
@@ -432,6 +496,8 @@ namespace AdhanApp
                     rk?.SetValue("NotificationsEnabled", notificationsEnabled.ToString());
                     rk?.SetValue("ScreenIndex", screenIndex.ToString());
                     rk?.SetValue("WindowPosition", windowPosition);
+                    rk?.SetValue("Volume", volume.ToString(CultureInfo.InvariantCulture));
+                    rk?.SetValue("CalcMethod", calcMethod.ToString());
                 }
             }
             catch { }
@@ -450,6 +516,8 @@ namespace AdhanApp
                         if (bool.TryParse(rk.GetValue("NotificationsEnabled")?.ToString(), out bool n)) notificationsEnabled = n;
                         if (int.TryParse(rk.GetValue("ScreenIndex")?.ToString(), out int si)) screenIndex = si;
                         windowPosition = rk.GetValue("WindowPosition")?.ToString() ?? "TopLeft";
+                        if (double.TryParse(rk.GetValue("Volume")?.ToString(), CultureInfo.InvariantCulture, out double v)) volume = v;
+                        if (Enum.TryParse(rk.GetValue("CalcMethod")?.ToString(), out CalculationMethod m)) calcMethod = m;
                     }
                     else
                     {
