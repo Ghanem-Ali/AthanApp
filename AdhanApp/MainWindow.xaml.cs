@@ -47,8 +47,8 @@ namespace AdhanApp
         private AudioFileReader audioFileReader = default!;
         private bool isMuted = false;
         private bool notificationsEnabled = true;
-        double lat = 18.3000;
-        double lng = 42.7333;
+        double lat = 21.4225; // مكة المكرمة
+        double lng = 39.8262; // مكة المكرمة
         int screenIndex = 0;
         string windowPosition = "TopLeft";
         double volume = 0.5;
