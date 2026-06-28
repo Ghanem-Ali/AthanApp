@@ -6,7 +6,7 @@
 
 ### 🚀 التحميل (Download)
 يمكنك تحميل البرنامج مباشرة من خلال الرابط التالي:
-[📥 اضغط هنا لتحميل التطبيق (Athan.exe)](https://drive.google.com/file/d/1ZwufqIt8zHw3VxOJXNWKMlIkQFs-Y6_P/view?usp=drive_link)
+[📥 اضغط هنا لتحميل التطبيق (Athan.exe)](https://github.com/Ghanem-Ali/AthanApp/releases/download/v1.0.0/Athan.exe)
 
 ---
 
@@ -48,7 +48,7 @@ A simple and lightweight Windows application that reminds you of prayer (Athan) 
 
 ### 🚀 Download
 You can download the application directly via the following link:
-[📥 Click here to download the app (Athan.exe)](https://drive.google.com/file/d/1BsBkshgosVzCHKxkSLN6I7vYtiO6IXjz/view?usp=drive_link)
+[📥 Click here to download the app (Athan.exe)](https://github.com/Ghanem-Ali/AthanApp/releases/download/v1.0.0/Athan.exe)
 
 ---
 
